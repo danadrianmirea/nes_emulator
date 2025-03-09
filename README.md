@@ -1,1 +1,1 @@
-"# nes_emulator" 
+A simple emulator implemented in C
