@@ -3,21 +3,57 @@
 #include <string.h>
 #include "loader.h"
 
+// Private helper functions
+static bool validate_header(const INESHeader* header) {
+    // Check for iNES magic number
+    if (memcmp(header->signature, "NES\x1A", 4) != 0) {
+        printf("Error: Not a valid iNES ROM file\n");
+        return false;
+    }
+
+    // Validate sizes
+    if (header->prg_rom_banks == 0) {
+        printf("Error: ROM contains no PRG-ROM banks\n");
+        return false;
+    }
+
+    // Check for NES 2.0 format
+    bool is_nes2 = ((header->flags7 & 0x0C) == 0x08);
+    if (is_nes2) {
+        printf("Warning: NES 2.0 format detected, some features may not be supported\n");
+    }
+
+    // Get mapper number
+    u8 mapper_number = (header->flags7 & 0xF0) | (header->flags6 >> 4);
+    
+    // For now, we only support mappers 0-4
+    if (mapper_number > 4) {
+        printf("Error: Unsupported mapper type: %d\n", mapper_number);
+        return false;
+    }
+
+    return true;
+}
+
 bool load_ines_rom(const char* filename, Memory* mem) {
     if (!filename || !mem) return false;
     
     FILE* file = fopen(filename, "rb");
-    if (!file) return false;
+    if (!file) {
+        printf("Error: Could not open file: %s\n", filename);
+        return false;
+    }
     
     // Read header
     INESHeader header;
     if (fread(&header, 1, INES_HEADER_SIZE, file) != INES_HEADER_SIZE) {
+        printf("Error: Could not read iNES header\n");
         fclose(file);
         return false;
     }
     
-    // Verify iNES format
-    if (memcmp(header.signature, "NES\x1A", 4) != 0) {
+    // Validate header
+    if (!validate_header(&header)) {
         fclose(file);
         return false;
     }
@@ -28,30 +64,68 @@ bool load_ines_rom(const char* filename, Memory* mem) {
     mem->mapper_number = (header.flags7 & 0xF0) | (header.flags6 >> 4);
     mem->has_trainer = header.flags6 & 0x04;
     
-    // Skip trainer if present
+    // Handle trainer if present
     if (mem->has_trainer) {
-        fseek(file, INES_TRAINER_SIZE, SEEK_CUR);
+        printf("Warning: ROM contains trainer data\n");
+        if (fseek(file, INES_TRAINER_SIZE, SEEK_CUR) != 0) {
+            printf("Error: Could not skip trainer data\n");
+            fclose(file);
+            return false;
+        }
     }
     
     // Allocate and load PRG-ROM
     size_t prg_size = header.prg_rom_banks * PRG_ROM_BANK_SIZE;
     mem->cart_rom = (u8*)malloc(prg_size);
     if (!mem->cart_rom) {
+        printf("Error: Could not allocate memory for PRG-ROM\n");
         fclose(file);
         return false;
     }
     
     if (fread(mem->cart_rom, 1, prg_size, file) != prg_size) {
+        printf("Error: Could not read PRG-ROM data\n");
         free(mem->cart_rom);
         mem->cart_rom = NULL;
         fclose(file);
         return false;
     }
-    
-    // For now, we'll skip CHR-ROM loading as it's handled by the PPU
-    // You'll want to add this when implementing the PPU
+
+    // Handle CHR-ROM if present
+    if (header.chr_rom_banks > 0) {
+        size_t chr_size = header.chr_rom_banks * CHR_ROM_BANK_SIZE;
+        mem->chr_rom = (u8*)malloc(chr_size);
+        if (!mem->chr_rom) {
+            printf("Error: Could not allocate memory for CHR-ROM\n");
+            free(mem->cart_rom);
+            mem->cart_rom = NULL;
+            fclose(file);
+            return false;
+        }
+
+        if (fread(mem->chr_rom, 1, chr_size, file) != chr_size) {
+            printf("Error: Could not read CHR-ROM data\n");
+            free(mem->cart_rom);
+            free(mem->chr_rom);
+            mem->cart_rom = NULL;
+            mem->chr_rom = NULL;
+            fclose(file);
+            return false;
+        }
+    } else {
+        // No CHR-ROM, game uses CHR-RAM
+        mem->chr_rom = NULL;
+        printf("Info: ROM uses CHR-RAM\n");
+    }
     
     fclose(file);
+    
+    // Print ROM info
+    printf("ROM loaded successfully:\n");
+    printf("PRG-ROM banks: %d (%dKB)\n", mem->prg_rom_banks, mem->prg_rom_banks * 16);
+    printf("CHR-ROM banks: %d (%dKB)\n", mem->chr_rom_banks, mem->chr_rom_banks * 8);
+    printf("Mapper: %d\n", mem->mapper_number);
+    
     return true;
 }
 
@@ -61,6 +135,11 @@ void unload_rom(Memory* mem) {
     if (mem->cart_rom) {
         free(mem->cart_rom);
         mem->cart_rom = NULL;
+    }
+    
+    if (mem->chr_rom) {
+        free(mem->chr_rom);
+        mem->chr_rom = NULL;
     }
     
     mem->prg_rom_banks = 0;
