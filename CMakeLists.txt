@@ -17,6 +17,9 @@ find_package(SDL2 REQUIRED)
 include_directories(${SDL2_INCLUDE_DIRS})
 include_directories(${CMAKE_SOURCE_DIR}/src)
 
+# Create bin directory
+file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
+
 # Add source files
 add_executable(nes_emu
     src/main.c
@@ -27,4 +30,11 @@ add_executable(nes_emu
 )
 
 # Link SDL2
-target_link_libraries(nes_emu ${SDL2_LIBRARIES}) 
+target_link_libraries(nes_emu ${SDL2_LIBRARIES})
+
+# Copy executable to bin directory after build
+add_custom_command(TARGET nes_emu POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_FILE:nes_emu>
+        ${CMAKE_SOURCE_DIR}/bin/
+) 
