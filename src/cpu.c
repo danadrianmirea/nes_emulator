@@ -61,8 +61,101 @@ static void tya(CPU* cpu); // Transfer Y to Accumulator
 
 // Instruction table
 static const Instruction instructions[256] = {
-    // TODO: Fill this with the complete instruction set
-    // This will be a big table mapping opcodes to instructions
+    // 0x00-0x0F
+    { "BRK", brk, IMP, 7 }, { "ORA", ora, IZX, 6 }, { "???", nop, IMP, 2 }, { "???", nop, IMP, 8 },
+    { "???", nop, IMP, 3 }, { "ORA", ora, ZP0, 3 }, { "ASL", asl, ZP0, 5 }, { "???", nop, IMP, 5 },
+    { "PHP", php, IMP, 3 }, { "ORA", ora, IMM, 2 }, { "ASL", asl, ACC, 2 }, { "???", nop, IMP, 2 },
+    { "???", nop, IMP, 4 }, { "ORA", ora, ABS, 4 }, { "ASL", asl, ABS, 6 }, { "???", nop, IMP, 6 },
+
+    // 0x10-0x1F
+    { "BPL", bpl, REL, 2 }, { "ORA", ora, IZY, 5 }, { "???", nop, IMP, 2 }, { "???", nop, IMP, 8 },
+    { "???", nop, IMP, 4 }, { "ORA", ora, ZPX, 4 }, { "ASL", asl, ZPX, 6 }, { "???", nop, IMP, 6 },
+    { "CLC", clc, IMP, 2 }, { "ORA", ora, ABY, 4 }, { "???", nop, IMP, 2 }, { "???", nop, IMP, 7 },
+    { "???", nop, IMP, 4 }, { "ORA", ora, ABX, 4 }, { "ASL", asl, ABX, 7 }, { "???", nop, IMP, 7 },
+
+    // 0x20-0x2F
+    { "JSR", jsr, ABS, 6 }, { "AND", and, IZX, 6 }, { "???", nop, IMP, 2 }, { "???", nop, IMP, 8 },
+    { "BIT", bit, ZP0, 3 }, { "AND", and, ZP0, 3 }, { "ROL", rol, ZP0, 5 }, { "???", nop, IMP, 5 },
+    { "PLP", plp, IMP, 4 }, { "AND", and, IMM, 2 }, { "ROL", rol, ACC, 2 }, { "???", nop, IMP, 2 },
+    { "BIT", bit, ABS, 4 }, { "AND", and, ABS, 4 }, { "ROL", rol, ABS, 6 }, { "???", nop, IMP, 6 },
+
+    // 0x30-0x3F
+    { "BMI", bmi, REL, 2 }, { "AND", and, IZY, 5 }, { "???", nop, IMP, 2 }, { "???", nop, IMP, 8 },
+    { "???", nop, IMP, 4 }, { "AND", and, ZPX, 4 }, { "ROL", rol, ZPX, 6 }, { "???", nop, IMP, 6 },
+    { "SEC", sec, IMP, 2 }, { "AND", and, ABY, 4 }, { "???", nop, IMP, 2 }, { "???", nop, IMP, 7 },
+    { "???", nop, IMP, 4 }, { "AND", and, ABX, 4 }, { "ROL", rol, ABX, 7 }, { "???", nop, IMP, 7 },
+
+    // 0x40-0x4F
+    { "RTI", rti, IMP, 6 }, { "EOR", eor, IZX, 6 }, { "???", nop, IMP, 2 }, { "???", nop, IMP, 8 },
+    { "???", nop, IMP, 3 }, { "EOR", eor, ZP0, 3 }, { "LSR", lsr, ZP0, 5 }, { "???", nop, IMP, 5 },
+    { "PHA", pha, IMP, 3 }, { "EOR", eor, IMM, 2 }, { "LSR", lsr, ACC, 2 }, { "???", nop, IMP, 2 },
+    { "JMP", jmp, ABS, 3 }, { "EOR", eor, ABS, 4 }, { "LSR", lsr, ABS, 6 }, { "???", nop, IMP, 6 },
+
+    // 0x50-0x5F
+    { "BVC", bvc, REL, 2 }, { "EOR", eor, IZY, 5 }, { "???", nop, IMP, 2 }, { "???", nop, IMP, 8 },
+    { "???", nop, IMP, 4 }, { "EOR", eor, ZPX, 4 }, { "LSR", lsr, ZPX, 6 }, { "???", nop, IMP, 6 },
+    { "CLI", cli, IMP, 2 }, { "EOR", eor, ABY, 4 }, { "???", nop, IMP, 2 }, { "???", nop, IMP, 7 },
+    { "???", nop, IMP, 4 }, { "EOR", eor, ABX, 4 }, { "LSR", lsr, ABX, 7 }, { "???", nop, IMP, 7 },
+
+    // 0x60-0x6F
+    { "RTS", rts, IMP, 6 }, { "ADC", adc, IZX, 6 }, { "???", nop, IMP, 2 }, { "???", nop, IMP, 8 },
+    { "???", nop, IMP, 3 }, { "ADC", adc, ZP0, 3 }, { "ROR", ror, ZP0, 5 }, { "???", nop, IMP, 5 },
+    { "PLA", pla, IMP, 4 }, { "ADC", adc, IMM, 2 }, { "ROR", ror, ACC, 2 }, { "???", nop, IMP, 2 },
+    { "JMP", jmp, IND, 5 }, { "ADC", adc, ABS, 4 }, { "ROR", ror, ABS, 6 }, { "???", nop, IMP, 6 },
+
+    // 0x70-0x7F
+    { "BVS", bvs, REL, 2 }, { "ADC", adc, IZY, 5 }, { "???", nop, IMP, 2 }, { "???", nop, IMP, 8 },
+    { "???", nop, IMP, 4 }, { "ADC", adc, ZPX, 4 }, { "ROR", ror, ZPX, 6 }, { "???", nop, IMP, 6 },
+    { "SEI", sei, IMP, 2 }, { "ADC", adc, ABY, 4 }, { "???", nop, IMP, 2 }, { "???", nop, IMP, 7 },
+    { "???", nop, IMP, 4 }, { "ADC", adc, ABX, 4 }, { "ROR", ror, ABX, 7 }, { "???", nop, IMP, 7 },
+
+    // 0x80-0x8F
+    { "???", nop, IMP, 2 }, { "STA", sta, IZX, 6 }, { "???", nop, IMP, 2 }, { "???", nop, IMP, 6 },
+    { "STY", sty, ZP0, 3 }, { "STA", sta, ZP0, 3 }, { "STX", stx, ZP0, 3 }, { "???", nop, IMP, 3 },
+    { "DEY", dey, IMP, 2 }, { "???", nop, IMP, 2 }, { "TXA", txa, IMP, 2 }, { "???", nop, IMP, 2 },
+    { "STY", sty, ABS, 4 }, { "STA", sta, ABS, 4 }, { "STX", stx, ABS, 4 }, { "???", nop, IMP, 4 },
+
+    // 0x90-0x9F
+    { "BCC", bcc, REL, 2 }, { "STA", sta, IZY, 6 }, { "???", nop, IMP, 2 }, { "???", nop, IMP, 6 },
+    { "STY", sty, ZPX, 4 }, { "STA", sta, ZPX, 4 }, { "STX", stx, ZPY, 4 }, { "???", nop, IMP, 4 },
+    { "TYA", tya, IMP, 2 }, { "STA", sta, ABY, 5 }, { "TXS", txs, IMP, 2 }, { "???", nop, IMP, 5 },
+    { "???", nop, IMP, 5 }, { "STA", sta, ABX, 5 }, { "???", nop, IMP, 5 }, { "???", nop, IMP, 5 },
+
+    // 0xA0-0xAF
+    { "LDY", ldy, IMM, 2 }, { "LDA", lda, IZX, 6 }, { "LDX", ldx, IMM, 2 }, { "???", nop, IMP, 6 },
+    { "LDY", ldy, ZP0, 3 }, { "LDA", lda, ZP0, 3 }, { "LDX", ldx, ZP0, 3 }, { "???", nop, IMP, 3 },
+    { "TAY", tay, IMP, 2 }, { "LDA", lda, IMM, 2 }, { "TAX", tax, IMP, 2 }, { "???", nop, IMP, 2 },
+    { "LDY", ldy, ABS, 4 }, { "LDA", lda, ABS, 4 }, { "LDX", ldx, ABS, 4 }, { "???", nop, IMP, 4 },
+
+    // 0xB0-0xBF
+    { "BCS", bcs, REL, 2 }, { "LDA", lda, IZY, 5 }, { "???", nop, IMP, 2 }, { "???", nop, IMP, 5 },
+    { "LDY", ldy, ZPX, 4 }, { "LDA", lda, ZPX, 4 }, { "LDX", ldx, ZPY, 4 }, { "???", nop, IMP, 4 },
+    { "CLV", clv, IMP, 2 }, { "LDA", lda, ABY, 4 }, { "TSX", tsx, IMP, 2 }, { "???", nop, IMP, 4 },
+    { "LDY", ldy, ABX, 4 }, { "LDA", lda, ABX, 4 }, { "LDX", ldx, ABY, 4 }, { "???", nop, IMP, 4 },
+
+    // 0xC0-0xCF
+    { "CPY", cpy, IMM, 2 }, { "CMP", cmp, IZX, 6 }, { "???", nop, IMP, 2 }, { "???", nop, IMP, 8 },
+    { "CPY", cpy, ZP0, 3 }, { "CMP", cmp, ZP0, 3 }, { "DEC", dec, ZP0, 5 }, { "???", nop, IMP, 5 },
+    { "INY", iny, IMP, 2 }, { "CMP", cmp, IMM, 2 }, { "DEX", dex, IMP, 2 }, { "???", nop, IMP, 2 },
+    { "CPY", cpy, ABS, 4 }, { "CMP", cmp, ABS, 4 }, { "DEC", dec, ABS, 6 }, { "???", nop, IMP, 6 },
+
+    // 0xD0-0xDF
+    { "BNE", bne, REL, 2 }, { "CMP", cmp, IZY, 5 }, { "???", nop, IMP, 2 }, { "???", nop, IMP, 8 },
+    { "???", nop, IMP, 4 }, { "CMP", cmp, ZPX, 4 }, { "DEC", dec, ZPX, 6 }, { "???", nop, IMP, 6 },
+    { "CLD", cld, IMP, 2 }, { "CMP", cmp, ABY, 4 }, { "???", nop, IMP, 2 }, { "???", nop, IMP, 7 },
+    { "???", nop, IMP, 4 }, { "CMP", cmp, ABX, 4 }, { "DEC", dec, ABX, 7 }, { "???", nop, IMP, 7 },
+
+    // 0xE0-0xEF
+    { "CPX", cpx, IMM, 2 }, { "SBC", sbc, IZX, 6 }, { "???", nop, IMP, 2 }, { "???", nop, IMP, 8 },
+    { "CPX", cpx, ZP0, 3 }, { "SBC", sbc, ZP0, 3 }, { "INC", inc, ZP0, 5 }, { "???", nop, IMP, 5 },
+    { "INX", inx, IMP, 2 }, { "SBC", sbc, IMM, 2 }, { "NOP", nop, IMP, 2 }, { "???", nop, IMP, 2 },
+    { "CPX", cpx, ABS, 4 }, { "SBC", sbc, ABS, 4 }, { "INC", inc, ABS, 6 }, { "???", nop, IMP, 6 },
+
+    // 0xF0-0xFF
+    { "BEQ", beq, REL, 2 }, { "SBC", sbc, IZY, 5 }, { "???", nop, IMP, 2 }, { "???", nop, IMP, 8 },
+    { "???", nop, IMP, 4 }, { "SBC", sbc, ZPX, 4 }, { "INC", inc, ZPX, 6 }, { "???", nop, IMP, 6 },
+    { "SED", sed, IMP, 2 }, { "SBC", sbc, ABY, 4 }, { "???", nop, IMP, 2 }, { "???", nop, IMP, 7 },
+    { "???", nop, IMP, 4 }, { "SBC", sbc, ABX, 4 }, { "INC", inc, ABX, 7 }, { "???", nop, IMP, 7 }
 };
 
 void cpu_init(CPU* cpu, Memory* memory) {
