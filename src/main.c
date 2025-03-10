@@ -3,6 +3,11 @@
 #include "nes.h"
 #include "memory.h"
 #include "loader.h"
+#include "cpu.h"
+
+// Target ~60 FPS
+#define TARGET_FPS 60
+#define FRAME_TIME (1000 / TARGET_FPS)
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
@@ -19,14 +24,18 @@ int main(int argc, char* argv[]) {
     // Create NES instance
     NES nes = {0};
     Memory memory = {0};
+    CPU cpu = {0};
+    
     nes.memory = &memory;
-
-    // Initialize memory
+    
+    // Initialize memory and CPU
     if (!memory_init(&memory)) {
         printf("Memory initialization failed\n");
         SDL_Quit();
         return 1;
     }
+    
+    cpu_init(&cpu, &memory);
 
     // Create window
     nes.window = SDL_CreateWindow(
@@ -84,26 +93,49 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    // Reset CPU after ROM is loaded
+    cpu_reset(&cpu);
+
     // Main emulation loop
     nes.running = true;
     SDL_Event event;
+    Uint32 frame_start, frame_time;
+    
+    // CPU cycles per frame (~29780 cycles at 60 FPS)
+    const int cycles_per_frame = (1789773 / 60);  // NES CPU clock rate / target FPS
+    int cycles_remaining = 0;
 
     while (nes.running) {
+        frame_start = SDL_GetTicks();
+
         // Handle SDL events
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 nes.running = false;
             }
+            // TODO: Handle controller input events
         }
 
-        // Run one frame of emulation
-        nes_run_frame(&nes);
+        // Execute CPU cycles for this frame
+        cycles_remaining = cycles_per_frame;
+        while (cycles_remaining > 0) {
+            cycles_remaining -= cpu_step(&cpu);
+            
+            // Check for interrupts
+            // TODO: Implement proper PPU timing and NMI generation
+        }
 
         // Update screen
         SDL_UpdateTexture(nes.texture, NULL, nes.screen_buffer, NES_SCREEN_WIDTH * sizeof(u32));
         SDL_RenderClear(nes.renderer);
         SDL_RenderCopy(nes.renderer, nes.texture, NULL, NULL);
         SDL_RenderPresent(nes.renderer);
+
+        // Frame timing
+        frame_time = SDL_GetTicks() - frame_start;
+        if (frame_time < FRAME_TIME) {
+            SDL_Delay(FRAME_TIME - frame_time);
+        }
     }
 
     // Cleanup

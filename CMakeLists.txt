@@ -23,6 +23,7 @@ add_executable(nes_emu
     src/nes.c
     src/memory.c
     src/loader.c
+    src/cpu.c
 )
 
 # Link SDL2

@@ -10,12 +10,6 @@
 #define NES_SCREEN_HEIGHT   240
 #define NES_SCALE          3
 
-// Memory map sizes
-#define RAM_SIZE          0x0800   // 2KB internal RAM
-#define PPU_REG_SIZE     0x0008   // 8 PPU registers
-#define APU_IO_SIZE      0x0018   // APU and I/O registers
-#define CART_SIZE        0x8000   // 32KB cartridge space
-
 // Common types
 typedef uint8_t  u8;
 typedef uint16_t u16;
@@ -26,14 +20,6 @@ typedef int32_t  i32;
 
 // Main NES structure
 typedef struct {
-    // CPU registers
-    u16 pc;    // Program Counter
-    u8  sp;    // Stack Pointer
-    u8  a;     // Accumulator
-    u8  x;     // X Index
-    u8  y;     // Y Index
-    u8  p;     // Status Register
-
     // Memory components
     struct Memory* memory;
     

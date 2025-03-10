@@ -5,6 +5,7 @@ Debug/
 Release/
 *.o
 *.obj
+*.idx
 
 # IDE specific files
 .vscode/
